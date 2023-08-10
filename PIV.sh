@@ -280,3 +280,93 @@ else
     echo "API request failed. HTTP status code: $response"
     exit 1  # Failure
 fi
+
+
+
+#!/bin/bash
+
+# Specify the Elasticsearch endpoint
+ELASTICSEARCH_ENDPOINT="http://your-elasticsearch-server:9200"
+
+# Check if the Elasticsearch endpoint is set
+if [ -z "$ELASTICSEARCH_ENDPOINT" ]; then
+    echo "ELASTICSEARCH_ENDPOINT is not set. Please set it to the Elasticsearch server endpoint."
+    exit 1
+fi
+
+# Send a GET request to the Elasticsearch endpoint
+response=$(curl -s -o /dev/null -w "%{http_code}" "$ELASTICSEARCH_ENDPOINT")
+
+# Check the HTTP response code
+if [ "$response" -eq 200 ]; then
+    echo "Elasticsearch endpoint is working properly."
+else
+    echo "Unable to access the Elasticsearch endpoint."
+fi
+
+
+#!/bin/bash
+
+# Specify Oracle connection details
+ORACLE_HOST="your_oracle_host"
+ORACLE_PORT="your_oracle_port"
+ORACLE_SERVICE="your_oracle_service"
+ORACLE_USERNAME="your_oracle_username"
+ORACLE_PASSWORD="your_oracle_password"
+ORACLE_TABLE="your_oracle_table"
+
+# Check if spark-shell command is available
+if [ ! -x "$(command -v spark-shell)" ]; then
+    echo "spark-shell command is not available. Please install Spark or set SPARK_HOME correctly."
+    exit 1
+fi
+
+# Check if Oracle connection details are set
+if [ -z "$ORACLE_HOST" ] || [ -z "$ORACLE_PORT" ] || [ -z "$ORACLE_SERVICE" ] || [ -z "$ORACLE_USERNAME" ] || [ -z "$ORACLE_PASSWORD" ] || [ -z "$ORACLE_TABLE" ]; then
+    echo "Please set all the Oracle connection variables."
+    exit 1
+fi
+
+# Spark shell script
+SPARK_SCRIPT="
+import org.apache.spark.sql.SparkSession
+
+object OracleConnectionExample {
+  def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder()
+      .appName(\"Oracle Connection Example\")
+      .getOrCreate()
+
+    try {
+      val jdbcUrl = \"jdbc:oracle:thin:@//$ORACLE_HOST:$ORACLE_PORT/$ORACLE_SERVICE\"
+      val jdbcUsername = \"$ORACLE_USERNAME\"
+      val jdbcPassword = \"$ORACLE_PASSWORD\"
+
+      val connectionProperties = new java.util.Properties()
+      connectionProperties.put(\"user\", jdbcUsername)
+      connectionProperties.put(\"password\", jdbcPassword)
+
+      val df = spark.read.jdbc(jdbcUrl, \"$ORACLE_TABLE\", connectionProperties)
+      println(\"Connected to Oracle successfully.\")
+    } catch {
+      case e: Exception =>
+        println(\"Failed to connect to Oracle: \" + e.getMessage)
+    } finally {
+      spark.stop()
+    }
+  }
+}
+
+OracleConnectionExample.main(Array())
+"
+
+# Create a temporary Scala script
+TMP_SCRIPT=$(mktemp)
+echo "$SPARK_SCRIPT" > "$TMP_SCRIPT"
+
+# Run the Spark shell script
+echo "Running Spark script to test Oracle connection..."
+spark-shell --class OracleConnectionExample --master local[1] --conf "spark.executor.extraJavaOptions=-Duser.timezone=UTC" --conf "spark.driver.extraJavaOptions=-Duser.timezone=UTC" --driver-class-path /path/to/oracle/driver/ojdbc8.jar "$TMP_SCRIPT"
+
+# Clean up temporary Scala script
+rm -f "$TMP_SCRIPT"
