@@ -369,4 +369,18 @@ echo "Running Spark script to test Oracle connection..."
 spark-shell --class OracleConnectionExample --master local[1] --conf "spark.executor.extraJavaOptions=-Duser.timezone=UTC" --conf "spark.driver.extraJavaOptions=-Duser.timezone=UTC" --driver-class-path /path/to/oracle/driver/ojdbc8.jar "$TMP_SCRIPT"
 
 # Clean up temporary Scala script
-rm -f "$TMP_SCRIPT"
+rm -f "$TMP_SCRIPT
+
+
+#!/bin/bash
+
+# Run the Python script
+python_script_return_code=$?
+
+# Check the return code
+if [ "$python_script_return_code" -eq 0 ]; then
+    echo "Success: Python script returned 0."
+else
+    echo "Failure: Python script returned a non-zero value: $python_script_return_code."
+fi
+
