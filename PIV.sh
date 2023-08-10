@@ -20,6 +20,52 @@ else
     echo "Unable to access HDFS cluster from the edge node."
 fi
 
+#!/bin/bash
+
+# Specify the API endpoint and the PFX file details
+API_URL="https://api.example.com"
+PFX_FILE="path/to/your/certificate.pfx"
+PFX_PASSWORD="your_pfx_password"
+CERT_DIR="certs"
+
+# Check if the PFX file exists
+if [ ! -f "$PFX_FILE" ]; then
+    echo "PFX file not found. Please provide a valid path to the PFX file."
+    exit 1
+fi
+
+# Create a directory to store the PEM files
+mkdir -p "$CERT_DIR"
+
+# Convert PFX to PEM files (assuming the private key is not passphrase-protected)
+openssl pkcs12 -in "$PFX_FILE" -clcerts -nokeys -out "$CERT_DIR/certificate.crt" -password pass:"$PFX_PASSWORD"
+openssl pkcs12 -in "$PFX_FILE" -nocerts -nodes -out "$CERT_DIR/private.key" -password pass:"$PFX_PASSWORD"
+
+# JSON payload for the POST request (replace with your actual payload)
+JSON_PAYLOAD='{"key1": "value1", "key2": "value2"}'
+
+# Custom headers for the POST request (replace with your actual headers)
+CUSTOM_HEADERS=(
+    "Authorization: Bearer your_access_token"
+    "Custom-Header: custom_value"
+    "Another-Header: another_value"
+)
+
+# Perform a POST request to the API endpoint
+if curl \
+    --cert "$CERT_DIR/certificate.crt" \
+    --key "$CERT_DIR/private.key" \
+    -X POST \
+    -H "Content-Type: application/json" \
+    "${CUSTOM_HEADERS[@]}" \
+    -d "$JSON_PAYLOAD" \
+    "$API_URL" -o /dev/null -s -f; then
+    echo "POST request to API endpoint succeeded."
+    exit 0  # Success
+else
+    echo "POST request to API endpoint failed or encountered an error."
+    exit 1  # Failure
+fi
 
 
 # Specify the Hadoop home directory
