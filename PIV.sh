@@ -567,3 +567,25 @@ else
     exit 1  # Failure
 fi
 
+#!/bin/bash
+
+# Run the Python script and capture its output
+api_response=$(python my_script.py)
+
+# Get the exit status of the Python script
+exit_status=$?
+
+# Check if the Python script executed successfully
+if [ "$exit_status" -eq 0 ]; then
+    # Check the API response code
+    if [ "$api_response" -ge 200 ] && [ "$api_response" -lt 300 ]; then
+        echo "API request succeeded. Response code: $api_response"
+        exit 0  # Success
+    else
+        echo "API request failed. Response code: $api_response"
+        exit 1  # Failure
+    fi
+else
+    echo "Python script encountered an error. Exit status: $exit_status"
+    exit 1  # Failure
+fi
