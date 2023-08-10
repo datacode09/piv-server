@@ -250,6 +250,8 @@ fi
 
 
 
+#!/bin/bash
+
 # Specify the API endpoint and the PFX file details
 API_URL="https://api.example.com"
 PFX_FILE="path/to/your/certificate.pfx"
@@ -265,9 +267,18 @@ fi
 # Create a directory to store the PEM files
 mkdir -p "$CERT_DIR"
 
-# Convert PFX to PEM files
+# Convert PFX to PEM files (assuming the private key is not passphrase-protected)
 openssl pkcs12 -in "$PFX_FILE" -clcerts -nokeys -out "$CERT_DIR/certificate.crt" -password pass:"$PFX_PASSWORD"
-openssl pkcs12 -in "$PFX_FILE" -nocerts -out "$CERT_DIR/private.key" -password pass:"$PFX_PASSWORD"
+openssl pkcs12 -in "$PFX_FILE" -nocerts -nodes -out "$CERT_DIR/private.key" -password pass:"$PFX_PASSWORD"
+
+# Perform a simple "ping" request to check if the API endpoint is accessible
+if curl --cert "$CERT_DIR/certificate.crt" --key "$CERT_DIR/private.key" -X GET "$API_URL" -o /dev/null -s -f; then
+    echo "API endpoint is accessible."
+    exit 0  # Success
+else
+    echo "API endpoint is not accessible or encountered an error."
+    exit 1  # Failure
+fi
 
 # Perform API testing using curl and the PEM files for client authentication
 response=$(curl -o /dev/null --write-out "%{http_code}" --cert "$CERT_DIR/certificate.crt" --key "$CERT_DIR/private.key" -X GET "$API_URL")
@@ -280,6 +291,7 @@ else
     echo "API request failed. HTTP status code: $response"
     exit 1  # Failure
 fi
+
 
 
 
