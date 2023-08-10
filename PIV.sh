@@ -384,3 +384,46 @@ else
     echo "Failure: Python script returned a non-zero value: $python_script_return_code."
 fi
 
+
+#!/bin/bash
+
+# Specify SFTP server connection details
+SFTP_HOST="your_sftp_server"
+SFTP_PORT="your_sftp_port"  # Default SFTP port is 22
+SFTP_USER="your_sftp_username"
+PRIVATE_KEY="path/to/your/private_key"
+
+# Check if the sftp command is available
+if [ ! -x "$(command -v sftp)" ]; then
+    echo "sftp command is not available. Please install an SFTP client (e.g., OpenSSH)."
+    exit 1
+fi
+
+# Check if the SFTP server connection details are set
+if [ -z "$SFTP_HOST" ] || [ -z "$SFTP_USER" ] || [ -z "$PRIVATE_KEY" ]; then
+    echo "Please set the SFTP_HOST, SFTP_USER, and PRIVATE_KEY variables."
+    exit 1
+fi
+
+# Check if the private key file exists
+if [ ! -f "$PRIVATE_KEY" ]; then
+    echo "Private key file not found. Please provide a valid path to the private key file."
+    exit 1
+fi
+
+# Set the correct permissions for the private key file
+chmod 400 "$PRIVATE_KEY"
+
+# Attempt to connect to the SFTP server using private key file
+echo "Checking SFTP server connection using host, port, username, and private key file..."
+sftp -oIdentityFile="$PRIVATE_KEY" -oPort="$SFTP_PORT" "$SFTP_USER@$SFTP_HOST" <<EOF
+bye
+EOF
+
+# Check if the SFTP connection was successful
+if [ $? -eq 0 ]; then
+    echo "SFTP server connection using host, port, username, and private key file is successful."
+else
+    echo "Unable to connect to the SFTP server using host, port, username, and private key file."
+fi
+
