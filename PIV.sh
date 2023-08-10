@@ -20,7 +20,7 @@ else
     echo "Unable to access HDFS cluster from the edge node."
 fi
 
-#!/bin/bash
+
 
 # Specify the Hadoop home directory
 HADOOP_HOME="/path/to/your/hadoop/home"
@@ -51,7 +51,7 @@ else
     echo "Unable to access HDFS cluster from the edge node."
 fi
 
-#!/bin/bash
+
 
 # Specify the Sqoop home directory
 SQOOP_HOME="/path/to/your/sqoop/home"
@@ -95,7 +95,7 @@ else
 fi
 
 
-#!/bin/bash
+
 
 # Specify the Spark home directory
 SPARK_HOME="/path/to/your/spark/home"
@@ -123,7 +123,7 @@ else
     echo "Unable to run Spark on the edge node."
 fi
 
-#!/bin/bash
+
 
 # Specify the NiFi home directory
 NIFI_HOME="/path/to/your/nifi/home"
@@ -154,4 +154,129 @@ if [ "$nifi_status" -eq 1 ]; then
     echo "NiFi is working properly on the edge node."
 else
     echo "Unable to start or run NiFi on the edge node."
+fi
+
+
+
+
+# Specify the SQL Server connection details
+DB_HOST="your_database_host"
+DB_PORT="your_database_port"
+
+# Check if the nc (netcat) command is available
+if [ ! -x "$(command -v nc)" ]; then
+    echo "nc (netcat) command is not available. Please install netcat."
+    exit 1
+fi
+
+# Check if the SQL Server connection details are set
+if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ]; then
+    echo "Please set the DB_HOST and DB_PORT variables."
+    exit 1
+fi
+
+# Check SQL Server Database status using netcat
+echo "Checking SQL Server Database status..."
+nc -z "$DB_HOST" "$DB_PORT"
+
+# Check if netcat was successful
+if [ $? -eq 0 ]; then
+    echo "SQL Server Database is up and accessible."
+else
+    echo "Unable to connect to the SQL Server Database."
+fi
+
+#!/bin/bash
+
+# Specify the Oracle Database connection details
+DB_HOST="your_database_host"
+DB_PORT="your_database_port"
+DB_SERVICE="your_database_service"
+
+# Check if the tnsping command is available
+if [ ! -x "$(command -v tnsping)" ]; then
+    echo "tnsping command is not available. Please install Oracle Instant Client."
+    exit 1
+fi
+
+# Check if the Oracle Database connection details are set
+if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_SERVICE" ]; then
+    echo "Please set the DB_HOST, DB_PORT, and DB_SERVICE variables."
+    exit 1
+fi
+
+# Check Oracle Database status using tnsping
+echo "Checking Oracle Database status..."
+tnsping "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=$DB_HOST)(PORT=$DB_PORT))(CONNECT_DATA=(SERVICE_NAME=$DB_SERVICE)))" 2>&1
+
+# Check if tnsping was successful
+if [ $? -eq 0 ]; then
+    echo "Oracle Database is up and accessible."
+else
+    echo "Unable to connect to the Oracle Database."
+fi
+
+#!/bin/bash
+
+# Specify the SFTP server connection details
+SFTP_USER="your_sftp_username"
+SFTP_HOST="your_sftp_server"
+SFTP_PORT="your_sftp_port"
+
+# Check if the sftp command is available
+if [ ! -x "$(command -v sftp)" ]; then
+    echo "sftp command is not available. Please install an SFTP client."
+    exit 1
+fi
+
+# Check if the SFTP server connection details are set
+if [ -z "$SFTP_USER" ] || [ -z "$SFTP_HOST" ] || [ -z "$SFTP_PORT" ]; then
+    echo "Please set the SFTP_USER, SFTP_HOST, and SFTP_PORT variables."
+    exit 1
+fi
+
+# Attempt to connect to the SFTP server
+echo "Checking SFTP server status..."
+sftp -o Port="$SFTP_PORT" "$SFTP_USER@$SFTP_HOST" <<EOF
+exit
+EOF
+
+# Check if the SFTP connection was successful
+if [ $? -eq 0 ]; then
+    echo "SFTP server is up and accessible."
+else
+    echo "Unable to connect to the SFTP server."
+fi
+
+
+
+# Specify the API endpoint and the PFX file details
+API_URL="https://api.example.com"
+PFX_FILE="path/to/your/certificate.pfx"
+PFX_PASSWORD="your_pfx_password"
+CERT_DIR="certs"
+
+# Check if the PFX file exists
+if [ ! -f "$PFX_FILE" ]; then
+    echo "PFX file not found. Please provide a valid path to the PFX file."
+    exit 1
+fi
+
+# Create a directory to store the PEM files
+mkdir -p "$CERT_DIR"
+
+# Convert PFX to PEM files
+openssl pkcs12 -in "$PFX_FILE" -clcerts -nokeys -out "$CERT_DIR/certificate.crt" -password pass:"$PFX_PASSWORD"
+openssl pkcs12 -in "$PFX_FILE" -nocerts -out "$CERT_DIR/private.key" -password pass:"$PFX_PASSWORD"
+
+# Perform API testing using curl and the PEM files for client authentication
+response=$(curl -o /dev/null --write-out "%{http_code}" --cert "$CERT_DIR/certificate.crt" --key "$CERT_DIR/private.key" -X GET "$API_URL")
+
+# Check the HTTP response code
+if [ "$response" -ge 200 ] && [ "$response" -lt 300 ]; then
+    echo "API request succeeded. HTTP status code: $response"
+    exit 0  # Success
+else
+    echo "API request failed. HTTP status code: $response"
+    exit 1  # Failure
 fi
